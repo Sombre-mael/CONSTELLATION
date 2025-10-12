@@ -1,21 +1,21 @@
 
 import { FcElectricity } from 'react-icons/fc';
-import { GiAutoRepair } from 'react-icons/gi';
 import { FaPaintRoller } from 'react-icons/fa6';
-import { GiBroom } from 'react-icons/gi';
+// import { GiBroom } from 'react-icons/gi';
 import { FaLaptopCode } from 'react-icons/fa6';
 import { FaBuilding } from 'react-icons/fa';
 import { MdCarpenter } from 'react-icons/md';
+import { BsBorderAll } from 'react-icons/bs';
 import React from 'react';
 
 const servicesList = [
     { title: 'Électricité', img: FcElectricity, desc: 'Installation, maintenance et dépannage électrique professionnel pour tous types de bâtiments.' },
-    { title: 'Mécanique',   img: GiAutoRepair, desc: 'Services mécaniques complets pour véhicules et équipements industriels.' },
+    { title: 'Charpenterie',   img: MdCarpenter, desc: 'Pose de structures en bois pour tous types de batiments, toitures sur mesures.' },
     { title: 'Peinture',    img: FaPaintRoller, desc: 'Peinture intérieure et extérieure de qualité avec des finitions impeccables.' },
     //{ title: 'Nettoyage',   img: GiBroom, desc: 'Services de nettoyage professionnel pour bâtiments résidentiels et commerciaux.' },
     { title: 'Design & Digital', img: FaLaptopCode, desc: 'Conception web, automatisation et gestion des réseaux sociaux pour votre entreprise.' },
     { title: 'Immobilier',  img: FaBuilding , desc: 'Services immobiliers complets : vente, location et gestion de propriétés.' },
-    { title: 'Menuiserie',  img: MdCarpenter, desc: 'Fabrication et installation sur mesure de meubles et éléments en bois.' },
+    { title: 'Carrelage',  img: BsBorderAll, desc: 'Pose de carrelage interieur et exterieur, faïence et mosaïque pour tous vos espaces.' },
 ];
 
 export default function Services() {

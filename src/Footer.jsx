@@ -44,7 +44,7 @@ export default function Footer() {
                 </li>
                 <li className="flex items-center">
                     <i className="fas fa-envelope text-gray-400 mr-2"></i>
-                    <span className="text-gray-400">contact@constellation-afrique.com</span>
+                    <span className="text-gray-400">constellation356@gmail.com</span>
                 </li>
                 </ul>
             </div>
