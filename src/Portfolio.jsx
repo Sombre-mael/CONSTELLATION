@@ -57,13 +57,13 @@ const portfolioItems = [
     { 
         title: "Carrelage", 
         img: "./assets/carr.jpg", 
-        desc: "Des mécaniciens hors pairs et pros pour rendre à votre véhicule une santé très bonne.",
+        desc: "Votre solution pour vos sols et murs durable, le detail qui change tout",
         gallery: [
             "./assets/carr1.jpg",
             "./assets/carr2.jpg",
             "./assets/carr3.jpg",
         ],
-        longDesc: "Notre équipe de mécaniciens qualifiés assure l'entretien et la réparation de tous types de véhicules. Nous utilisons des équipements de diagnostic modernes et des pièces de qualité pour garantir la fiabilité de nos interventions."
+        longDesc: "Notre équipe de carreleur qualifiés assure la pose et les rémenagements de tous types de maisons. Sublimez vos sols et murs : quand le carrelage devient signature."
     },
     //{ title: "Nettoyage", img: "/assets/netto2.jpeg", desc: "Un service de nettoyage de qualité pour vos bâtiments." },
 ];

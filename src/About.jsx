@@ -9,7 +9,7 @@ export default function About() {
         </div>
         <div className="md:w-1/2">
             <h2 className="text-3xl font-bold mb-6 text-gray-800">À propos de CONSTELLATION</h2>
-            <p className="text-gray-600 mb-4">CONSTELLATION est une agence multiservices basée en Afrique, offrant des solutions professionnelles dans divers domaines pour répondre aux besoins de nos clients.</p>
+            <p className="text-gray-600 mb-4">CONSTELLATION est une agence multiservices basée à Lubumbashi , offrant des solutions professionnelles dans divers domaines pour répondre aux besoins de nos clients.</p>
             <p className="text-gray-600 mb-4">Notre équipe d'experts qualifiés s'engage à fournir des services de haute qualité, avec un souci du détail et un professionnalisme inégalé.</p>
             <p className="text-gray-600 mb-6">Nous couvrons un large éventail de services pour vous offrir une solution complète et intégrée.</p>
             <div className="flex flex-wrap gap-4">
