@@ -76,7 +76,7 @@ export default function Contact() {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-gray-800">Adresse</h4>
-                                    <p className="text-gray-600">123 Avenue des Services, Ville, Pays</p>
+                                    <p className="text-gray-600">123 Avenue Carmel</p>
                                 </div>
                             </div>
                             <div className="flex items-start">
