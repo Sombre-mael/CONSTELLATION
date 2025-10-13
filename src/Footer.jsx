@@ -8,7 +8,7 @@ export default function Footer() {
             <div>
                 <div className="flex items-center mb-4">
                     <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl mr-3">
-                        <img src="../public/assets/Constellation.jpg" alt="Logo" className="rounded-full" />
+                        <img src="/assets/Constellation.jpg" alt="Logo" className="rounded-full" />
                     </div>
                     <h3 className="text-xl font-bold">CONSTELLATION</h3>
                 </div>

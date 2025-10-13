@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 const portfolioItems = [
     { 
         title: "Réalisation Électrique Résidentiel", 
-        img: "../public/assets/reale.jpg", 
+        img: "/assets/reale.jpg", 
         desc: "Installation complète d'un système électrique moderne dans une villa de luxe.",
         gallery: [
-            "../public/assets/reale.jpg",
+            "/assets/reale.jpg",
             "https://images.unsplash.com/photo-1621905252507-b35492cc74b4",
             "https://plus.unsplash.com/premium_photo-1678766821881-9d6899c22e58?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8amV1bmUlMjBub2lyJTIwZWxlY3RyaWNpZW58ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=500"
         ],
@@ -14,17 +14,17 @@ const portfolioItems = [
     },
     { 
         title: "Rénovation Peinture Batiment", 
-        img: "../public/assets/realp.png", 
+        img: "/assets/realp.png", 
         desc: "Rafraîchissement des espaces de travail avec des couleurs modernes et dynamiques.",
         gallery: [
-            "../public/assets/realp.png",
-            "../public/assets/peint1.jpg"
+            "/assets/realp.png",
+            "/assets/peint1.jpg"
         ],
         longDesc: "Nos services de peinture professionnelle transforment vos espaces de travail en environnements inspirants. Nous utilisons des peintures de haute qualité et des techniques modernes pour garantir une finition parfaite et durable."
     },
     { 
         title: "Design & Digital", 
-        img: "../public/assets/digit3.jpeg", 
+        img: "/assets/digit3.jpeg", 
         desc: "Création d'un site web responsive et moderne pour une PME locale.",
         gallery: [
             "https://images.unsplash.com/photo-1547658719-da2b51169166",
@@ -35,7 +35,7 @@ const portfolioItems = [
     },
     { 
         title: "Charpenterie", 
-        img: "../public/assets/menui1.jpg", 
+        img: "./assets/menui1.jpg", 
         desc: "Des meubles de qualité faits sur mesure.",
         gallery: [
             "https://plus.unsplash.com/premium_photo-1664302179163-4f37a6b67e54?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=387",
@@ -56,12 +56,12 @@ const portfolioItems = [
     },
     { 
         title: "Carrelage", 
-        img: "../public/assets/carr.jpg", 
+        img: "./assets/carr.jpg", 
         desc: "Des mécaniciens hors pairs et pros pour rendre à votre véhicule une santé très bonne.",
         gallery: [
-            "../public/assets/carr1.jpg",
-            "../public/assets/carr2.jpg",
-            "../public/assets/carr3.jpg",
+            "./assets/carr1.jpg",
+            "./assets/carr2.jpg",
+            "./assets/carr3.jpg",
         ],
         longDesc: "Notre équipe de mécaniciens qualifiés assure l'entretien et la réparation de tous types de véhicules. Nous utilisons des équipements de diagnostic modernes et des pièces de qualité pour garantir la fiabilité de nos interventions."
     },

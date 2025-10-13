@@ -4,73 +4,73 @@ const teamMembers = [
     {
         name: "Marco Kabanza",
         role: "PDG de Constellation et Chef du Departement de peinture",
-        image: "../public/assets/leader.jpg",
+        image: "./assets/leader.jpg",
         quote: "Ensemble, nous construisons l'avenir du pays."
     },
     {
         name: "Ezechiel Mfuka",
         role: "Chef du Departement Digital",
-        image: "../public/assets/ezechiel.jpg",
+        image: "./assets/ezechiel.jpg",
         quote: "La qualité et la sécurité de nos services sont nos priorités absolues."
     },
     {
         name: "Mael Kahilu",
         role: "Vice Chef du Departement Digital",
-        image: "../public/assets/mael.jpg",
+        image: "./assets/mael.jpg",
         quote: "L'innovation numérique au service de votre réussite."
     },
     {
         name: "Mme Evelyne Mulanga",
         role: "Chef des Amazones",
-        image: "../public/assets/evelyn.jpg",
+        image: "./assets/evelyn.jpg",
         quote: "Chaque défi est une occasion de prouver ma force, pas d'exprimer ma faiblesse."
     },
     {
         name: "Mme Sarah",
         role: "Chef de Departement de Communication et Membre des Amazones",
-        image: "../public/assets/sarah.jpg",
+        image: "./assets/sarah.jpg",
         quote: "Je suis maîtresse de mon destin, et chaque jour est une nouvelle page blanche à écrire."
     },
     {
         name: "Mme Marianna",
         role: "Membre des Amazones",
-        image: "../public/assets/marianna.jpg",
+        image: "./assets/marianna.jpg",
         quote: "Je ne suis pas survivante, je suis une guerrière qui a triomphé."
     },
     {
         name: "Mme Marie",
         role: "Membre des Amazones",
-        image: "../public/assets/amazone1.jpg",
+        image: "./assets/amazone1.jpg",
         quote: "La seule permission dont j'ai besoin pour briller est celle que je me donne moi même."
     },
     {
         name: "Marcus Kis",
         role: "Membre de Constellation",
-        image: "../public/assets/kis.jpg",
+        image: "./assets/kis.jpg",
         quote: "Je suis une force de la nature, et rien ne peut m'arrêter."
     },
     {
         name: "Mr Keddy",
         role: "Membre de Departement Peinture",
-        image: "../public/assets/keddy.jpg",
+        image: "./assets/keddy.jpg",
         quote: "Ma vie est la preuve que de la poussière peuvent naître des étoiles."
     },
     {
         name: "Mr Jeno",
         role: "Membre de Departement Peinture",
-        image: "../public/assets/jeno.jpg",
+        image: "./assets/jeno.jpg",
         quote: "Quand les doutes parlent, ma volonté leur répond."
     },
     {
         name: "Mr Elias",
         role: "Membre du departement d'éléctricié",
-        image: "../public/assets/elias.jpg",
+        image: "./assets/elias.jpg",
         quote: "Je suis la somme de tous mes combats et la preuve que le courage est plus fort que la douleur."
     },
     {
         name: "Equipe Constellation",
         role: "Etoile de Constellation",
-        image: "../public/assets/equipe.jpg",
+        image: "./assets/equipe.jpg",
         quote: "L'univers n'est pas fait d'étoiles solitaires, mais d'étoiles qui, ensemble, dessinent les histoires et les chemins que d'autres suivront. C'est ça notre équipe"
     }
 ];
