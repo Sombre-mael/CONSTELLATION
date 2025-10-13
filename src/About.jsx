@@ -5,7 +5,7 @@ export default function About() {
     <section id="apropos" className="py-16 bg-gray-100 fade-in">
         <div className="container mx-auto px-4 flex flex-col md:flex-row items-center">
         <div className="md:w-1/2 mb-8 md:mb-0 md:pr-8">
-            <img src="/assets/Const.jpg" alt="Équipe CONSTELLATION" className="rounded-lg shadow-lg w-full" loading="lazy" />
+            <img src="../public/assets/Const.jpg" alt="Équipe CONSTELLATION" className="rounded-lg shadow-lg w-full" loading="lazy" />
         </div>
         <div className="md:w-1/2">
             <h2 className="text-3xl font-bold mb-6 text-gray-800">À propos de CONSTELLATION</h2>

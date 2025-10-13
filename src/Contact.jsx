@@ -94,7 +94,7 @@ export default function Contact() {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-gray-800">Email</h4>
-                                    <p className="text-gray-600">contact@constellation-afrique.com</p>
+                                    <p className="text-gray-600">constellation356@gmail.com</p>
                                 </div>
                             </div>
                         </div>

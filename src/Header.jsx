@@ -12,7 +12,7 @@ export default function Header() {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center">
             <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl mr-3">
-            <img src="/assets/Constellation.jpg" alt="Logo" className="rounded-full" />
+            <img src="../public/assets/Constellation.jpg" alt="Logo" className="rounded-full" />
             </div>
             <h1 className="text-2xl font-bold text-primary">CONSTELLATION</h1>
         </div>
