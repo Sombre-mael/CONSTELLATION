@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
     return (
@@ -13,6 +14,9 @@ export default function Footer() {
                     <h3 className="text-xl font-bold">CONSTELLATION</h3>
                 </div>
                 <p className="text-gray-400">Votre partenaire multiservices en Afrique pour tous vos besoins professionnels.</p>
+                <Link to="/blog" className="inline-block mt-4 text-accent hover:text-yellow-400 font-medium transition duration-300" data-testid="footer-blog-link">
+                    Visitez notre Blog →
+                </Link>
             </div>
             <div>
             <h4 className="text-lg font-bold mb-4">Services</h4>
@@ -24,11 +28,12 @@ export default function Footer() {
                 </ul>
             </div>
             <div>
-                <h4 className="text-lg font-bold mb-4">Services (suite)</h4>
+                <h4 className="text-lg font-bold mb-4">Liens utiles</h4>
                 <ul className="space-y-2">
                 <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">Design & Digital</a></li>
                 <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">Immobilier</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition duration-300">Menuiserie</a></li>
+                <li><Link to="/blog" className="text-gray-400 hover:text-white transition duration-300">Blog</Link></li>
+                <li><Link to="/admin/login" className="text-gray-400 hover:text-white transition duration-300">Administration</Link></li>
                 </ul>
             </div>
             <div>

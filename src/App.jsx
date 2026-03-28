@@ -1,41 +1,35 @@
-import React, { useEffect } from 'react';
-import Header from './Header';
-import Hero from './Hero';
-import Services from './Services';
-import Portfolio from './Portfolio';
-import About from './About';
-import Contact from './Contact';
-import Footer from './Footer';
-import Team from './Team';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Pages
+import Home from './pages/Home';
+import Blog from './pages/Blog';
+import ArticleDetail from './pages/ArticleDetail';
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
-  useEffect(() => {
-    const handleSmoothScroll = (e) => {
-      if (e.target.matches('a[href^="#"]')) {
-        e.preventDefault();
-        const targetId = e.target.getAttribute('href');
-        const targetElement = document.querySelector(targetId);
-        if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'smooth' });
-        }
-      }
-    };
-
-    document.addEventListener('click', handleSmoothScroll);
-    return () => document.removeEventListener('click', handleSmoothScroll);
-  }, []);
-
   return (
-    <div>
-      <Header />
-      <Hero />
-      <Services />
-      <Portfolio />
-      <Team />
-      <About />
-      <Contact />
-      <Footer />
-    </div>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:id" element={<ArticleDetail />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
