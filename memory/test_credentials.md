@@ -1,7 +1,7 @@
 # Test Credentials
 
 ## Admin Account
-- **Email**: admin@constellation.cd
+- **Email**: constellation356@gmail.com
 - **Password**: Constellation2025!
 - **Role**: admin
 
