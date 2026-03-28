@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getArticle, likeArticle, addComment } from '../services/api';
 import { FaThumbsUp, FaComment, FaCalendar, FaUser, FaArrowLeft, FaFacebook, FaTwitter, FaLinkedin, FaWhatsapp, FaLink, FaTags } from 'react-icons/fa';
+import BlogHeader from '../components/BlogHeader';
 
 export default function ArticleDetail() {
   const { id } = useParams();
@@ -87,27 +88,36 @@ export default function ArticleDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
+      <>
+        <BlogHeader />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </>
     );
   }
 
   if (!article) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-500 text-lg mb-4">Article non trouvé</p>
-          <Link to="/blog" className="text-primary hover:text-secondary">
-            Retour au blog
-          </Link>
+      <>
+        <BlogHeader />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-500 text-lg mb-4">Article non trouvé</p>
+            <Link to="/blog" className="text-primary hover:text-secondary">
+              Retour au blog
+            </Link>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <BlogHeader />
+      
       {/* Hero Image */}
       {article.image_url && (
         <div className="w-full h-64 md:h-96 relative">
