@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import os
-import secrets
 import bcrypt
 import jwt
 from datetime import datetime, timezone, timedelta
@@ -11,7 +10,7 @@ from bson import ObjectId
 
 from fastapi import FastAPI, HTTPException, Request, Response, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr
 from motor.motor_asyncio import AsyncIOMotorClient
 
 # ============ CONFIG ============
@@ -136,7 +135,7 @@ async def startup_event():
     await db.categories.create_index("name", unique=True)
     
     # Seed admin
-    admin_email = os.environ.get("ADMIN_EMAIL", "admin@constellation.cd")
+    admin_email = os.environ.get("ADMIN_EMAIL", "constellation356@gmail.com")
     admin_password = os.environ.get("ADMIN_PASSWORD", "Constellation2025!")
     
     existing = await db.users.find_one({"email": admin_email})
@@ -170,33 +169,6 @@ async def startup_event():
             {"$setOnInsert": {**cat, "created_at": datetime.now(timezone.utc)}},
             upsert=True
         )
-    
-    # Write test credentials
-    os.makedirs("/app/memory", exist_ok=True)
-    with open("/app/memory/test_credentials.md", "w") as f:
-        f.write(f"""# Test Credentials
-
-## Admin Account
-- Email: {admin_email}
-- Password: {admin_password}
-- Role: admin
-
-## Auth Endpoints
-- POST /api/auth/login
-- POST /api/auth/logout
-- GET /api/auth/me
-
-## Blog Endpoints
-- GET /api/articles
-- POST /api/articles (admin only)
-- GET /api/articles/:id
-- PUT /api/articles/:id (admin only)
-- DELETE /api/articles/:id (admin only)
-- POST /api/articles/:id/like
-- POST /api/articles/:id/comments
-- GET /api/categories
-""")
-    print("Credentials written to /app/memory/test_credentials.md")
 
 # ============ HEALTH CHECK ============
 @app.get("/api/health")
@@ -320,7 +292,6 @@ async def get_articles(
 
 @app.get("/api/articles/all")
 async def get_all_articles(user: dict = Depends(get_admin_user)):
-    """Get all articles including unpublished (admin only)"""
     articles = await db.articles.find({}).sort("created_at", -1).to_list(100)
     
     result = []
@@ -374,7 +345,6 @@ async def get_article(article_id: str):
     if not article:
         raise HTTPException(status_code=404, detail="Article non trouvé")
     
-    # Get comments
     comments = await db.comments.find({"article_id": article_id}).sort("created_at", -1).to_list(100)
     comments_list = []
     for c in comments:
@@ -412,10 +382,20 @@ async def update_article(article_id: str, article: ArticleUpdate, user: dict = D
         raise HTTPException(status_code=404, detail="Article non trouvé")
     
     update_data = {"updated_at": datetime.now(timezone.utc)}
-    for field in ["title", "content", "excerpt", "category", "tags", "image_url", "published"]:
-        value = getattr(article, field)
-        if value is not None:
-            update_data[field] = value
+    if article.title is not None:
+        update_data["title"] = article.title
+    if article.content is not None:
+        update_data["content"] = article.content
+    if article.excerpt is not None:
+        update_data["excerpt"] = article.excerpt
+    if article.category is not None:
+        update_data["category"] = article.category
+    if article.tags is not None:
+        update_data["tags"] = article.tags
+    if article.image_url is not None:
+        update_data["image_url"] = article.image_url
+    if article.published is not None:
+        update_data["published"] = article.published
     
     await db.articles.update_one({"_id": ObjectId(article_id)}, {"$set": update_data})
     return {"message": "Article mis à jour"}
@@ -430,7 +410,6 @@ async def delete_article(article_id: str, user: dict = Depends(get_admin_user)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Article non trouvé")
     
-    # Delete associated comments
     await db.comments.delete_many({"article_id": article_id})
     
     return {"message": "Article supprimé"}
@@ -446,12 +425,10 @@ async def like_article(article_id: str, request: Request):
     if not article:
         raise HTTPException(status_code=404, detail="Article non trouvé")
     
-    # Use IP as anonymous identifier
     client_ip = request.client.host if request.client else "unknown"
     likes = article.get("likes", [])
     
     if client_ip in likes:
-        # Unlike
         likes.remove(client_ip)
         await db.articles.update_one(
             {"_id": ObjectId(article_id)},
@@ -459,7 +436,6 @@ async def like_article(article_id: str, request: Request):
         )
         return {"liked": False, "likes_count": len(likes)}
     else:
-        # Like
         likes.append(client_ip)
         await db.articles.update_one(
             {"_id": ObjectId(article_id)},
@@ -487,7 +463,6 @@ async def add_comment(article_id: str, comment: CommentCreate):
     
     result = await db.comments.insert_one(doc)
     
-    # Update comment count
     await db.articles.update_one(
         {"_id": ObjectId(article_id)},
         {"$inc": {"comments_count": 1}}
