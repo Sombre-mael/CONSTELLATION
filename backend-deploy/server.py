@@ -4,7 +4,6 @@ load_dotenv()
 import os
 import bcrypt
 import jwt
-import certifi
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from bson import ObjectId
@@ -29,11 +28,13 @@ db = None
 async def init_db():
     global client, db
     try:
+        # Try with SSL certificate verification disabled for compatibility
         client = AsyncIOMotorClient(
-            MONGO_URL, 
-            tlsCAFile=certifi.where(),
-            serverSelectionTimeoutMS=5000,
-            connectTimeoutMS=5000
+            MONGO_URL,
+            tls=True,
+            tlsAllowInvalidCertificates=True,
+            serverSelectionTimeoutMS=10000,
+            connectTimeoutMS=10000
         )
         db = client[DB_NAME]
         # Test connection
