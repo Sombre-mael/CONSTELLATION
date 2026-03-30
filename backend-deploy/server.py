@@ -25,10 +25,17 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 client = None
 db = None
 
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+
 async def init_db():
     global client, db
     try:
-        # Try with SSL certificate verification disabled for compatibility
         client = AsyncIOMotorClient(
             MONGO_URL,
             tls=True,
@@ -37,18 +44,15 @@ async def init_db():
             connectTimeoutMS=10000
         )
         db = client[DB_NAME]
-        # Test connection
         await client.admin.command('ping')
         print("MongoDB connected successfully!")
         
-        # Create indexes
         await db.users.create_index("email", unique=True)
         await db.articles.create_index([("title", "text"), ("content", "text"), ("tags", "text")])
         await db.articles.create_index("category")
         await db.articles.create_index("created_at")
         await db.categories.create_index("name", unique=True)
         
-        # Seed admin
         admin_email = os.environ.get("ADMIN_EMAIL", "constellation356@gmail.com")
         admin_password = os.environ.get("ADMIN_PASSWORD", "Constellation2025!")
         
@@ -62,14 +66,13 @@ async def init_db():
                 "role": "admin",
                 "created_at": datetime.now(timezone.utc)
             })
-            print(f"Admin créé: {admin_email}")
+            print(f"Admin created: {admin_email}")
         
-        # Seed default categories
         default_categories = [
-            {"name": "Actualités", "description": "Dernières nouvelles de l'entreprise"},
-            {"name": "Projets", "description": "Nos réalisations récentes"},
-            {"name": "Conseils", "description": "Conseils et astuces professionnels"},
-            {"name": "Événements", "description": "Événements et célébrations"}
+            {"name": "Actualités", "description": "Dernières nouvelles"},
+            {"name": "Projets", "description": "Nos réalisations"},
+            {"name": "Conseils", "description": "Conseils professionnels"},
+            {"name": "Événements", "description": "Événements"}
         ]
         for cat in default_categories:
             await db.categories.update_one(
@@ -79,19 +82,16 @@ async def init_db():
             )
         print("Database initialized!")
     except Exception as e:
-        print(f"MongoDB connection error: {e}")
+        print(f"MongoDB error: {e}")
         raise
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     await init_db()
     yield
-    # Shutdown
     if client:
         client.close()
 
-# ============ APP INIT ============
 app = FastAPI(title="CONSTELLATION Blog API", lifespan=lifespan)
 
 app.add_middleware(
@@ -102,7 +102,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ============ MODELS ============
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
@@ -132,16 +131,6 @@ class CategoryCreate(BaseModel):
     name: str
     description: Optional[str] = None
 
-# ============ PASSWORD UTILS ============
-def hash_password(password: str) -> str:
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
-    return hashed.decode("utf-8")
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
-
-# ============ JWT UTILS ============
 def create_access_token(user_id: str, email: str) -> str:
     payload = {
         "sub": user_id,
@@ -170,16 +159,11 @@ async def get_current_user(request: Request) -> dict:
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         if payload.get("type") != "access":
-            raise HTTPException(status_code=401, detail="Type de token invalide")
+            raise HTTPException(status_code=401, detail="Token invalide")
         user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
         if not user:
             raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
-        return {
-            "id": str(user["_id"]),
-            "email": user["email"],
-            "name": user.get("name", "Admin"),
-            "role": user.get("role", "user")
-        }
+        return {"id": str(user["_id"]), "email": user["email"], "name": user.get("name", "Admin"), "role": user.get("role", "user")}
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expiré")
     except jwt.InvalidTokenError:
@@ -188,93 +172,46 @@ async def get_current_user(request: Request) -> dict:
 async def get_admin_user(request: Request) -> dict:
     user = await get_current_user(request)
     if user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
+        raise HTTPException(status_code=403, detail="Accès admin requis")
     return user
 
-# ============ HEALTH CHECK ============
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy", "service": "CONSTELLATION Blog API"}
+    return {"status": "healthy"}
 
-# ============ AUTH ENDPOINTS ============
 @app.post("/api/auth/login")
 async def login(request: LoginRequest, response: Response):
-    email = request.email.lower()
-    user = await db.users.find_one({"email": email})
-    
+    user = await db.users.find_one({"email": request.email.lower()})
     if not user or not verify_password(request.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     
-    access_token = create_access_token(str(user["_id"]), email)
-    refresh_token = create_refresh_token(str(user["_id"]))
-    
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        max_age=86400,
-        path="/"
-    )
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        max_age=604800,
-        path="/"
-    )
-    
-    return {
-        "id": str(user["_id"]),
-        "email": user["email"],
-        "name": user.get("name", "Admin"),
-        "role": user.get("role", "user"),
-        "token": access_token
-    }
+    access_token = create_access_token(str(user["_id"]), user["email"])
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=86400)
+    return {"id": str(user["_id"]), "email": user["email"], "name": user.get("name"), "role": user.get("role"), "token": access_token}
 
 @app.post("/api/auth/logout")
 async def logout(response: Response):
-    response.delete_cookie("access_token", path="/")
-    response.delete_cookie("refresh_token", path="/")
+    response.delete_cookie("access_token")
     return {"message": "Déconnexion réussie"}
 
 @app.get("/api/auth/me")
 async def get_me(user: dict = Depends(get_current_user)):
     return user
 
-# ============ CATEGORIES ENDPOINTS ============
 @app.get("/api/categories")
 async def get_categories():
-    categories = await db.categories.find({}, {"_id": 0}).to_list(100)
-    return categories
+    return await db.categories.find({}, {"_id": 0}).to_list(100)
 
 @app.post("/api/categories")
 async def create_category(category: CategoryCreate, user: dict = Depends(get_admin_user)):
-    existing = await db.categories.find_one({"name": category.name})
-    if existing:
-        raise HTTPException(status_code=400, detail="Cette catégorie existe déjà")
-    
-    await db.categories.insert_one({
-        "name": category.name,
-        "description": category.description,
-        "created_at": datetime.now(timezone.utc)
-    })
-    return {"message": "Catégorie créée", "name": category.name}
+    if await db.categories.find_one({"name": category.name}):
+        raise HTTPException(status_code=400, detail="Catégorie existe déjà")
+    await db.categories.insert_one({"name": category.name, "description": category.description, "created_at": datetime.now(timezone.utc)})
+    return {"message": "Catégorie créée"}
 
-# ============ ARTICLES ENDPOINTS ============
 @app.get("/api/articles")
-async def get_articles(
-    category: Optional[str] = None,
-    search: Optional[str] = None,
-    tag: Optional[str] = None,
-    page: int = Query(1, ge=1),
-    limit: int = Query(10, ge=1, le=50)
-):
+async def get_articles(category: Optional[str] = None, search: Optional[str] = None, tag: Optional[str] = None, page: int = Query(1, ge=1), limit: int = Query(10, ge=1, le=50)):
     query = {"published": True}
-    
     if category:
         query["category"] = category
     if tag:
@@ -283,113 +220,65 @@ async def get_articles(
         query["$text"] = {"$search": search}
     
     skip = (page - 1) * limit
-    
     articles = await db.articles.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     total = await db.articles.count_documents(query)
     
     result = []
-    for article in articles:
+    for a in articles:
         result.append({
-            "id": str(article["_id"]),
-            "title": article["title"],
-            "excerpt": article["excerpt"],
-            "content": article["content"],
-            "category": article["category"],
-            "tags": article.get("tags", []),
-            "image_url": article.get("image_url"),
-            "author_name": article.get("author_name", "Admin"),
-            "likes_count": article.get("likes_count", 0),
-            "comments_count": article.get("comments_count", 0),
-            "created_at": article["created_at"].isoformat() if isinstance(article["created_at"], datetime) else article["created_at"],
-            "published": article.get("published", True)
+            "id": str(a["_id"]), "title": a["title"], "excerpt": a["excerpt"], "content": a["content"],
+            "category": a["category"], "tags": a.get("tags", []), "image_url": a.get("image_url"),
+            "author_name": a.get("author_name", "Admin"), "likes_count": a.get("likes_count", 0),
+            "comments_count": a.get("comments_count", 0), "published": a.get("published", True),
+            "created_at": a["created_at"].isoformat() if isinstance(a["created_at"], datetime) else a["created_at"]
         })
-    
-    return {
-        "articles": result,
-        "total": total,
-        "page": page,
-        "pages": (total + limit - 1) // limit
-    }
+    return {"articles": result, "total": total, "page": page, "pages": (total + limit - 1) // limit}
 
 @app.get("/api/articles/all")
 async def get_all_articles(user: dict = Depends(get_admin_user)):
     articles = await db.articles.find({}).sort("created_at", -1).to_list(100)
-    
     result = []
-    for article in articles:
+    for a in articles:
         result.append({
-            "id": str(article["_id"]),
-            "title": article["title"],
-            "excerpt": article["excerpt"],
-            "content": article["content"],
-            "category": article["category"],
-            "tags": article.get("tags", []),
-            "image_url": article.get("image_url"),
-            "author_name": article.get("author_name", "Admin"),
-            "likes_count": article.get("likes_count", 0),
-            "comments_count": article.get("comments_count", 0),
-            "created_at": article["created_at"].isoformat() if isinstance(article["created_at"], datetime) else article["created_at"],
-            "published": article.get("published", True)
+            "id": str(a["_id"]), "title": a["title"], "excerpt": a["excerpt"], "content": a["content"],
+            "category": a["category"], "tags": a.get("tags", []), "image_url": a.get("image_url"),
+            "author_name": a.get("author_name", "Admin"), "likes_count": a.get("likes_count", 0),
+            "comments_count": a.get("comments_count", 0), "published": a.get("published", True),
+            "created_at": a["created_at"].isoformat() if isinstance(a["created_at"], datetime) else a["created_at"]
         })
-    
     return {"articles": result}
 
 @app.post("/api/articles")
 async def create_article(article: ArticleCreate, user: dict = Depends(get_admin_user)):
     doc = {
-        "title": article.title,
-        "content": article.content,
-        "excerpt": article.excerpt,
-        "category": article.category,
-        "tags": article.tags,
-        "image_url": article.image_url,
-        "author_id": user["id"],
-        "author_name": user["name"],
-        "likes_count": 0,
-        "comments_count": 0,
-        "likes": [],
-        "published": True,
-        "created_at": datetime.now(timezone.utc),
-        "updated_at": datetime.now(timezone.utc)
+        "title": article.title, "content": article.content, "excerpt": article.excerpt,
+        "category": article.category, "tags": article.tags, "image_url": article.image_url,
+        "author_id": user["id"], "author_name": user["name"], "likes_count": 0, "comments_count": 0,
+        "likes": [], "published": True, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc)
     }
-    
     result = await db.articles.insert_one(doc)
-    return {"id": str(result.inserted_id), "message": "Article créé avec succès"}
+    return {"id": str(result.inserted_id), "message": "Article créé"}
 
 @app.get("/api/articles/{article_id}")
 async def get_article(article_id: str):
     try:
         article = await db.articles.find_one({"_id": ObjectId(article_id)})
     except:
-        raise HTTPException(status_code=400, detail="ID d'article invalide")
-    
+        raise HTTPException(status_code=400, detail="ID invalide")
     if not article:
         raise HTTPException(status_code=404, detail="Article non trouvé")
     
     comments = await db.comments.find({"article_id": article_id}).sort("created_at", -1).to_list(100)
-    comments_list = []
-    for c in comments:
-        comments_list.append({
-            "id": str(c["_id"]),
-            "author_name": c["author_name"],
-            "content": c["content"],
-            "created_at": c["created_at"].isoformat() if isinstance(c["created_at"], datetime) else c["created_at"]
-        })
+    comments_list = [{"id": str(c["_id"]), "author_name": c["author_name"], "content": c["content"], 
+                      "created_at": c["created_at"].isoformat() if isinstance(c["created_at"], datetime) else c["created_at"]} for c in comments]
     
     return {
-        "id": str(article["_id"]),
-        "title": article["title"],
-        "content": article["content"],
-        "excerpt": article["excerpt"],
-        "category": article["category"],
-        "tags": article.get("tags", []),
-        "image_url": article.get("image_url"),
-        "author_name": article.get("author_name", "Admin"),
-        "likes_count": article.get("likes_count", 0),
-        "comments_count": article.get("comments_count", 0),
-        "created_at": article["created_at"].isoformat() if isinstance(article["created_at"], datetime) else article["created_at"],
-        "published": article.get("published", True),
-        "comments": comments_list
+        "id": str(article["_id"]), "title": article["title"], "content": article["content"],
+        "excerpt": article["excerpt"], "category": article["category"], "tags": article.get("tags", []),
+        "image_url": article.get("image_url"), "author_name": article.get("author_name", "Admin"),
+        "likes_count": article.get("likes_count", 0), "comments_count": article.get("comments_count", 0),
+        "published": article.get("published", True), "comments": comments_list,
+        "created_at": article["created_at"].isoformat() if isinstance(article["created_at"], datetime) else article["created_at"]
     }
 
 @app.put("/api/articles/{article_id}")
@@ -397,26 +286,15 @@ async def update_article(article_id: str, article: ArticleUpdate, user: dict = D
     try:
         existing = await db.articles.find_one({"_id": ObjectId(article_id)})
     except:
-        raise HTTPException(status_code=400, detail="ID d'article invalide")
-    
+        raise HTTPException(status_code=400, detail="ID invalide")
     if not existing:
         raise HTTPException(status_code=404, detail="Article non trouvé")
     
     update_data = {"updated_at": datetime.now(timezone.utc)}
-    if article.title is not None:
-        update_data["title"] = article.title
-    if article.content is not None:
-        update_data["content"] = article.content
-    if article.excerpt is not None:
-        update_data["excerpt"] = article.excerpt
-    if article.category is not None:
-        update_data["category"] = article.category
-    if article.tags is not None:
-        update_data["tags"] = article.tags
-    if article.image_url is not None:
-        update_data["image_url"] = article.image_url
-    if article.published is not None:
-        update_data["published"] = article.published
+    for field in ["title", "content", "excerpt", "category", "tags", "image_url", "published"]:
+        val = getattr(article, field)
+        if val is not None:
+            update_data[field] = val
     
     await db.articles.update_one({"_id": ObjectId(article_id)}, {"$set": update_data})
     return {"message": "Article mis à jour"}
@@ -426,23 +304,18 @@ async def delete_article(article_id: str, user: dict = Depends(get_admin_user)):
     try:
         result = await db.articles.delete_one({"_id": ObjectId(article_id)})
     except:
-        raise HTTPException(status_code=400, detail="ID d'article invalide")
-    
+        raise HTTPException(status_code=400, detail="ID invalide")
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Article non trouvé")
-    
     await db.comments.delete_many({"article_id": article_id})
-    
     return {"message": "Article supprimé"}
 
-# ============ LIKES ENDPOINT ============
 @app.post("/api/articles/{article_id}/like")
 async def like_article(article_id: str, request: Request):
     try:
         article = await db.articles.find_one({"_id": ObjectId(article_id)})
     except:
-        raise HTTPException(status_code=400, detail="ID d'article invalide")
-    
+        raise HTTPException(status_code=400, detail="ID invalide")
     if not article:
         raise HTTPException(status_code=404, detail="Article non trouvé")
     
@@ -451,79 +324,34 @@ async def like_article(article_id: str, request: Request):
     
     if client_ip in likes:
         likes.remove(client_ip)
-        await db.articles.update_one(
-            {"_id": ObjectId(article_id)},
-            {"$set": {"likes": likes, "likes_count": len(likes)}}
-        )
-        return {"liked": False, "likes_count": len(likes)}
     else:
         likes.append(client_ip)
-        await db.articles.update_one(
-            {"_id": ObjectId(article_id)},
-            {"$set": {"likes": likes, "likes_count": len(likes)}}
-        )
-        return {"liked": True, "likes_count": len(likes)}
+    
+    await db.articles.update_one({"_id": ObjectId(article_id)}, {"$set": {"likes": likes, "likes_count": len(likes)}})
+    return {"liked": client_ip in likes, "likes_count": len(likes)}
 
-# ============ COMMENTS ENDPOINT ============
 @app.post("/api/articles/{article_id}/comments")
 async def add_comment(article_id: str, comment: CommentCreate):
     try:
         article = await db.articles.find_one({"_id": ObjectId(article_id)})
     except:
-        raise HTTPException(status_code=400, detail="ID d'article invalide")
-    
+        raise HTTPException(status_code=400, detail="ID invalide")
     if not article:
         raise HTTPException(status_code=404, detail="Article non trouvé")
     
-    doc = {
-        "article_id": article_id,
-        "author_name": comment.author_name,
-        "content": comment.content,
-        "created_at": datetime.now(timezone.utc)
-    }
-    
+    doc = {"article_id": article_id, "author_name": comment.author_name, "content": comment.content, "created_at": datetime.now(timezone.utc)}
     result = await db.comments.insert_one(doc)
-    
-    await db.articles.update_one(
-        {"_id": ObjectId(article_id)},
-        {"$inc": {"comments_count": 1}}
-    )
-    
-    return {
-        "id": str(result.inserted_id),
-        "author_name": comment.author_name,
-        "content": comment.content,
-        "created_at": doc["created_at"].isoformat()
-    }
+    await db.articles.update_one({"_id": ObjectId(article_id)}, {"$inc": {"comments_count": 1}})
+    return {"id": str(result.inserted_id), "author_name": comment.author_name, "content": comment.content, "created_at": doc["created_at"].isoformat()}
 
 @app.get("/api/articles/{article_id}/comments")
 async def get_comments(article_id: str):
     comments = await db.comments.find({"article_id": article_id}).sort("created_at", -1).to_list(100)
-    
-    result = []
-    for c in comments:
-        result.append({
-            "id": str(c["_id"]),
-            "author_name": c["author_name"],
-            "content": c["content"],
-            "created_at": c["created_at"].isoformat() if isinstance(c["created_at"], datetime) else c["created_at"]
-        })
-    
-    return {"comments": result}
+    return {"comments": [{"id": str(c["_id"]), "author_name": c["author_name"], "content": c["content"],
+                          "created_at": c["created_at"].isoformat() if isinstance(c["created_at"], datetime) else c["created_at"]} for c in comments]}
 
-# ============ TAGS ENDPOINT ============
 @app.get("/api/tags")
 async def get_tags():
-    pipeline = [
-        {"$match": {"published": True}},
-        {"$unwind": "$tags"},
-        {"$group": {"_id": "$tags", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}},
-        {"$limit": 20}
-    ]
+    pipeline = [{"$match": {"published": True}}, {"$unwind": "$tags"}, {"$group": {"_id": "$tags", "count": {"$sum": 1}}}, {"$sort": {"count": -1}}, {"$limit": 20}]
     tags = await db.articles.aggregate(pipeline).to_list(20)
     return [{"name": t["_id"], "count": t["count"]} for t in tags]
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
