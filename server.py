@@ -8,6 +8,7 @@ import certifi
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from bson import ObjectId
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, Response, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,8 +22,76 @@ JWT_SECRET = os.environ.get("JWT_SECRET", "fallback_secret_key")
 JWT_ALGORITHM = "HS256"
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
+# ============ DATABASE ============
+client = None
+db = None
+
+async def init_db():
+    global client, db
+    try:
+        client = AsyncIOMotorClient(
+            MONGO_URL, 
+            tlsCAFile=certifi.where(),
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000
+        )
+        db = client[DB_NAME]
+        # Test connection
+        await client.admin.command('ping')
+        print("MongoDB connected successfully!")
+        
+        # Create indexes
+        await db.users.create_index("email", unique=True)
+        await db.articles.create_index([("title", "text"), ("content", "text"), ("tags", "text")])
+        await db.articles.create_index("category")
+        await db.articles.create_index("created_at")
+        await db.categories.create_index("name", unique=True)
+        
+        # Seed admin
+        admin_email = os.environ.get("ADMIN_EMAIL", "constellation356@gmail.com")
+        admin_password = os.environ.get("ADMIN_PASSWORD", "Constellation2025!")
+        
+        existing = await db.users.find_one({"email": admin_email})
+        if existing is None:
+            hashed = hash_password(admin_password)
+            await db.users.insert_one({
+                "email": admin_email,
+                "password_hash": hashed,
+                "name": "Admin",
+                "role": "admin",
+                "created_at": datetime.now(timezone.utc)
+            })
+            print(f"Admin créé: {admin_email}")
+        
+        # Seed default categories
+        default_categories = [
+            {"name": "Actualités", "description": "Dernières nouvelles de l'entreprise"},
+            {"name": "Projets", "description": "Nos réalisations récentes"},
+            {"name": "Conseils", "description": "Conseils et astuces professionnels"},
+            {"name": "Événements", "description": "Événements et célébrations"}
+        ]
+        for cat in default_categories:
+            await db.categories.update_one(
+                {"name": cat["name"]},
+                {"$setOnInsert": {**cat, "created_at": datetime.now(timezone.utc)}},
+                upsert=True
+            )
+        print("Database initialized!")
+    except Exception as e:
+        print(f"MongoDB connection error: {e}")
+        raise
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    await init_db()
+    yield
+    # Shutdown
+    if client:
+        client.close()
+
 # ============ APP INIT ============
-app = FastAPI(title="CONSTELLATION Blog API")
+app = FastAPI(title="CONSTELLATION Blog API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,10 +100,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ============ DATABASE ============
-client = AsyncIOMotorClient(MONGO_URL, tlsCAFile=certifi.where())
-db = client[DB_NAME]
 
 # ============ MODELS ============
 class LoginRequest(BaseModel):
@@ -125,52 +190,6 @@ async def get_admin_user(request: Request) -> dict:
         raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs")
     return user
 
-# ============ STARTUP ============
-@app.on_event("startup")
-async def startup_event():
-    # Create indexes
-    await db.users.create_index("email", unique=True)
-    await db.articles.create_index([("title", "text"), ("content", "text"), ("tags", "text")])
-    await db.articles.create_index("category")
-    await db.articles.create_index("created_at")
-    await db.categories.create_index("name", unique=True)
-    
-    # Seed admin
-    admin_email = os.environ.get("ADMIN_EMAIL", "constellation356@gmail.com")
-    admin_password = os.environ.get("ADMIN_PASSWORD", "Constellation2025!")
-    
-    existing = await db.users.find_one({"email": admin_email})
-    if existing is None:
-        hashed = hash_password(admin_password)
-        await db.users.insert_one({
-            "email": admin_email,
-            "password_hash": hashed,
-            "name": "Admin",
-            "role": "admin",
-            "created_at": datetime.now(timezone.utc)
-        })
-        print(f"Admin créé: {admin_email}")
-    elif not verify_password(admin_password, existing["password_hash"]):
-        await db.users.update_one(
-            {"email": admin_email},
-            {"$set": {"password_hash": hash_password(admin_password)}}
-        )
-        print("Mot de passe admin mis à jour")
-    
-    # Seed default categories
-    default_categories = [
-        {"name": "Actualités", "description": "Dernières nouvelles de l'entreprise"},
-        {"name": "Projets", "description": "Nos réalisations récentes"},
-        {"name": "Conseils", "description": "Conseils et astuces professionnels"},
-        {"name": "Événements", "description": "Événements et célébrations"}
-    ]
-    for cat in default_categories:
-        await db.categories.update_one(
-            {"name": cat["name"]},
-            {"$setOnInsert": {**cat, "created_at": datetime.now(timezone.utc)}},
-            upsert=True
-        )
-
 # ============ HEALTH CHECK ============
 @app.get("/api/health")
 async def health_check():
@@ -192,8 +211,8 @@ async def login(request: LoginRequest, response: Response):
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=86400,
         path="/"
     )
@@ -201,8 +220,8 @@ async def login(request: LoginRequest, response: Response):
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=604800,
         path="/"
     )
