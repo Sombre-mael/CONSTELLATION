@@ -4,6 +4,7 @@ load_dotenv()
 import os
 import bcrypt
 import jwt
+import certifi
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 from bson import ObjectId
@@ -32,7 +33,8 @@ app.add_middleware(
 )
 
 # ============ DATABASE ============
-client = AsyncIOMotorClient(MONGO_URL)
+# Use certifi for SSL certificates (required for MongoDB Atlas)
+client = AsyncIOMotorClient(MONGO_URL, tlsCAFile=certifi.where())
 db = client[DB_NAME]
 
 # ============ MODELS ============
